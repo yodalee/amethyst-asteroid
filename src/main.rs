@@ -9,11 +9,9 @@ use amethyst::{
     utils::application_root_dir,
 };
 
-struct MyState;
+mod states;
 
-impl SimpleState for MyState {
-    fn on_start(&mut self, _data: StateData<'_, GameData<'_, '_>>) {}
-}
+use crate::states::Asteroid;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -35,7 +33,7 @@ fn main() -> amethyst::Result<()> {
         )?
         .with_bundle(TransformBundle::new())?;
 
-    let mut game = Application::new(assets_dir, MyState, game_data)?;
+    let mut game = Application::new(assets_dir, Asteroid, game_data)?;
     game.run();
 
     Ok(())
