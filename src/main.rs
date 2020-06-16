@@ -1,5 +1,6 @@
 use amethyst::{
     core::transform::TransformBundle,
+    input::{InputBundle, StringBindings},
     prelude::*,
     renderer::{
         plugins::{RenderFlat2D, RenderToWindow},
@@ -11,8 +12,10 @@ use amethyst::{
 
 mod states;
 mod entities;
+mod system;
 
 use crate::states::Asteroid;
+use crate::system::{ShipControlSystem};
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -22,6 +25,10 @@ fn main() -> amethyst::Result<()> {
     let assets_dir = app_root.join("assets");
     let config_dir = app_root.join("config");
     let display_config_path = config_dir.join("display.ron");
+    let input_config_path = config_dir.join("input.ron");
+
+    let input_bundle = InputBundle::<StringBindings>::new()
+        .with_bindings_from_file(input_config_path)?;
 
     let game_data = GameDataBuilder::default()
         .with_bundle(
@@ -32,7 +39,9 @@ fn main() -> amethyst::Result<()> {
                 )
                 .with_plugin(RenderFlat2D::default()),
         )?
-        .with_bundle(TransformBundle::new())?;
+        .with_bundle(TransformBundle::new())?
+        .with_bundle(input_bundle)?
+        .with(ShipControlSystem, "ship_control_system", &["input_system"]);
 
     let mut game = Application::new(assets_dir, Asteroid, game_data)?;
     game.run();
