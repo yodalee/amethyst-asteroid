@@ -10,6 +10,7 @@ use amethyst::{
 };
 
 mod states;
+mod entities;
 
 use crate::states::Asteroid;
 
