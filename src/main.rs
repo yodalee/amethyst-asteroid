@@ -11,11 +11,11 @@ use amethyst::{
 };
 
 mod states;
-mod entities;
+mod components;
 mod system;
 
 use crate::states::Asteroid;
-use crate::system::{ShipControlSystem};
+use crate::system::{ShipControlSystem, PhysicalSystem};
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -41,7 +41,8 @@ fn main() -> amethyst::Result<()> {
         )?
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
-        .with(ShipControlSystem, "ship_control_system", &["input_system"]);
+        .with(ShipControlSystem, "ship_control_system", &["input_system"])
+        .with(PhysicalSystem, "physical_system", &["ship_control_system"]);
 
     let mut game = Application::new(assets_dir, Asteroid, game_data)?;
     game.run();

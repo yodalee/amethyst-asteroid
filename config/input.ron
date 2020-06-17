@@ -1,12 +1,12 @@
 (
   axes: {
     "rotate": Emulated(
-      neg: Key(Left),
       pos: Key(Right),
+      neg: Key(Left),
     ),
     "accelerate": Emulated(
-      neg: Key(Down),
       pos: Key(Up),
+      neg: Key(Down),
     ),
   },
   actions: {
