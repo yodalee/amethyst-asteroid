@@ -10,6 +10,7 @@ use amethyst::{
 };
 
 use crate::components::{Ship, Physical};
+use crate::states::{ARENA_WIDTH, ARENA_HEIGHT};
 
 #[derive(SystemDesc)]
 pub struct ShipControlSystem;
@@ -48,7 +49,6 @@ impl<'s> System<'s> for ShipControlSystem {
 
             // handle rotation -> rotate
             physical.rotation = rotate.unwrap_or_default() * delta * ship.rotate;
-
         }
     }
 }
@@ -73,6 +73,20 @@ impl<'s> System<'s> for PhysicalSystem {
             let rotation = physical.rotation * delta;
             transform.prepend_translation(Vector3::new(movement.x, movement.y, 0.0));
             transform.rotate_2d(rotation);
+
+            let ship_x = transform.translation().x;
+            let ship_y = transform.translation().y;
+            if ship_x < 0.0 {
+                transform.set_translation_x(ARENA_WIDTH-0.5);
+            } else if ship_x > ARENA_WIDTH {
+                transform.set_translation_x(0.5);
+            }
+
+            if ship_y < 0.0 {
+                transform.set_translation_y(ARENA_HEIGHT-0.5);
+            } else if ship_y > ARENA_HEIGHT {
+                transform.set_translation_y(0.5);
+            }
         }
     }
 }

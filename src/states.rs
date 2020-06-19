@@ -8,8 +8,8 @@ use amethyst::{
 
 use crate::components::{Ship, Physical};
 
-const ARENA_HEIGHT: f32 = 300.0;
-const ARENA_WIDTH: f32 = 300.0;
+pub const ARENA_HEIGHT: f32 = 300.0;
+pub const ARENA_WIDTH: f32 = 300.0;
 
 pub struct Asteroid;
 
@@ -62,7 +62,7 @@ fn initialize_ship(world: &mut World, sprite_handle: Handle<SpriteSheet>) {
         .with(Ship::new())
         .with(Physical {
             velocity: zero(),
-            max_velocity: 10.0,
+            max_velocity: 100.0,
             rotation: 0.0
         })
         .build();
