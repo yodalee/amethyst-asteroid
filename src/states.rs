@@ -6,7 +6,7 @@ use amethyst::{
 };
 
 use crate::components::{Ship, Physical};
-use crate::resources::{ShipRes, BulletRes};
+use crate::resources::{ShipRes, BulletRes, AsteroidRes, RandomGen};
 
 pub const ARENA_HEIGHT: f32 = 300.0;
 pub const ARENA_WIDTH: f32 = 300.0;
@@ -52,6 +52,8 @@ impl SimpleState for Asteroid {
 
         ShipRes::initialize(world);
         BulletRes::initialize(world);
+        AsteroidRes::initialize(world);
+        world.insert(RandomGen);
 
         initialize_camera(world);
         initialize_ship(world);

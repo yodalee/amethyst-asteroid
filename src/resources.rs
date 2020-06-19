@@ -3,6 +3,7 @@ use amethyst::{
     renderer::{SpriteRender},
 };
 
+use rand;
 use crate::textures::{SpriteStore};
 
 pub struct ShipRes {
@@ -36,5 +37,31 @@ impl BulletRes {
 
     pub fn sprite_render(&self) -> SpriteRender {
         self.sprite_store.sprite_renderer(0)
+    }
+}
+
+pub struct AsteroidRes {
+    pub sprite_store: SpriteStore,
+}
+
+impl AsteroidRes {
+    pub fn initialize(world: &mut World) {
+        let sprite_store = SpriteStore::from_path(world, "asteroids");
+        world.insert(
+            AsteroidRes { sprite_store: sprite_store }
+        );
+    }
+
+    pub fn sprite_render(&self) -> SpriteRender {
+        self.sprite_store.sprite_renderer(0)
+    }
+}
+
+pub struct RandomGen;
+
+impl RandomGen {
+    fn next_f32() -> f32 {
+        use rand::Rng;
+        rand::thread_rng().gen::<f32>()
     }
 }
