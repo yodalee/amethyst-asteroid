@@ -13,6 +13,7 @@ use amethyst::{
 mod states;
 mod components;
 mod system;
+mod textures;
 
 use crate::states::Asteroid;
 use crate::system::{ShipControlSystem, PhysicalSystem};
