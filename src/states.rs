@@ -11,7 +11,7 @@ use crate::resources::{ShipRes, BulletRes, AsteroidRes, RandomGen};
 pub const ARENA_HEIGHT: f32 = 300.0;
 pub const ARENA_WIDTH: f32 = 300.0;
 
-pub struct Asteroid;
+pub struct AsteroidGame;
 
 fn initialize_camera(world: &mut World) {
     let mut transform = Transform::default();
@@ -46,7 +46,7 @@ fn initialize_ship(world: &mut World) {
         .build();
 }
 
-impl SimpleState for Asteroid {
+impl SimpleState for AsteroidGame {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
 
