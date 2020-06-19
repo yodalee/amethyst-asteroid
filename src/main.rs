@@ -14,6 +14,7 @@ mod states;
 mod components;
 mod system;
 mod textures;
+mod resources;
 
 use crate::states::Asteroid;
 use crate::system::{ShipControlSystem, PhysicalSystem};
