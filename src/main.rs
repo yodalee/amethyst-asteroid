@@ -17,7 +17,7 @@ mod textures;
 mod resources;
 
 use crate::states::Asteroid;
-use crate::system::{ShipControlSystem, PhysicalSystem};
+use crate::system::{ShipControlSystem, PhysicalSystem, BoundarySystem};
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -44,7 +44,8 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
         .with(ShipControlSystem, "ship_control_system", &["input_system"])
-        .with(PhysicalSystem, "physical_system", &["ship_control_system"]);
+        .with(PhysicalSystem, "physical_system", &["ship_control_system"])
+        .with(BoundarySystem, "boundary_system", &["physical_system"]);
 
     let mut game = Application::new(assets_dir, Asteroid, game_data)?;
     game.run();

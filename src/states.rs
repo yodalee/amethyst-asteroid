@@ -6,7 +6,7 @@ use amethyst::{
 };
 
 use crate::components::{Ship, Physical};
-use crate::resources::{Ships, Bullets};
+use crate::resources::{ShipRes, BulletRes};
 
 pub const ARENA_HEIGHT: f32 = 300.0;
 pub const ARENA_WIDTH: f32 = 300.0;
@@ -29,7 +29,7 @@ fn initialize_ship(world: &mut World) {
     transform.set_translation_xyz(ARENA_WIDTH * 0.5, ARENA_HEIGHT * 0.5, 0.0);
 
     let sprite_render = {
-        let resource = world.read_resource::<Ships>();
+        let resource = world.read_resource::<ShipRes>();
         resource.sprite_render()
     };
 
@@ -50,8 +50,8 @@ impl SimpleState for Asteroid {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
 
-        Ships::initialize(world);
-        Bullets::initialize(world);
+        ShipRes::initialize(world);
+        BulletRes::initialize(world);
 
         initialize_camera(world);
         initialize_ship(world);
