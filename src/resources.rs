@@ -60,7 +60,7 @@ impl AsteroidRes {
 pub struct RandomGen;
 
 impl RandomGen {
-    fn next_f32() -> f32 {
+    pub fn next_f32(&self) -> f32 {
         use rand::Rng;
         rand::thread_rng().gen::<f32>()
     }

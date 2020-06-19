@@ -1,6 +1,6 @@
 use amethyst::{
     core::{
-        math::{Vector3, Vector2},
+        math::{Vector3, Vector2, zero},
         transform::components::Transform,
         timing::Time,
     },
@@ -11,8 +11,8 @@ use amethyst::{
 
 use log::{error};
 
-use crate::components::{Physical, Ship, Bullet};
-use crate::resources::{BulletRes};
+use crate::components::{Physical, Ship, Bullet, Asteroid};
+use crate::resources::{BulletRes, AsteroidRes, RandomGen};
 use crate::states::{ARENA_WIDTH, ARENA_HEIGHT};
 
 #[derive(SystemDesc)]
@@ -120,7 +120,6 @@ impl<'s> System<'s> for BoundarySystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
         ReadStorage<'s, Physical>,
-        ReadStorage<'s, Ship>,
         ReadStorage<'s, Bullet>,
         Entities<'s>,
     );
@@ -128,10 +127,9 @@ impl<'s> System<'s> for BoundarySystem {
     fn run(&mut self,
            (mut transforms,
             physicals,
-            ships,
             bullets,
             entities): Self::SystemData) {
-        for (_physical, _ships, transform) in (&physicals, &ships, &mut transforms).join() {
+        for (_, _, transform) in (&physicals, !&bullets, &mut transforms).join() {
             let ship_x = transform.translation().x;
             let ship_y = transform.translation().y;
             if ship_x < 0.0 {
@@ -156,6 +154,89 @@ impl<'s> System<'s> for BoundarySystem {
                 }
 
                 continue;
+            }
+        }
+    }
+}
+
+#[derive(SystemDesc)]
+pub struct SpawnAsteroidSystem {
+    pub time_to_spawn: f32,
+    pub max_velocity: f32,
+    pub max_rotation: f32,
+    pub distance_to_ship: f32,
+    pub average_spawn_time: f32,
+}
+
+impl SpawnAsteroidSystem {
+    pub fn new() -> Self {
+        Self {
+            time_to_spawn: 2f32,
+            max_velocity: 100f32,
+            max_rotation: 15f32,
+            distance_to_ship: 200f32,
+            average_spawn_time: 0.5f32,
+        }
+    }
+}
+
+impl<'s> System<'s> for SpawnAsteroidSystem {
+    type SystemData = (
+        Entities<'s>,
+        ReadStorage<'s, Ship>,
+        ReadStorage<'s, Transform>,
+        ReadExpect<'s, AsteroidRes>,
+        ReadExpect<'s, RandomGen>,
+        Read<'s, LazyUpdate>,
+        Read<'s, Time>,
+    );
+
+    fn run(&mut self,
+           (entities,
+            ships,
+            transforms,
+            asteroidres,
+            rand,
+            lazy,
+            time): Self::SystemData) {
+        let delta = time.delta_seconds();
+        self.time_to_spawn -= delta;
+
+        if self.time_to_spawn <= 0.0f32 {
+            for (_, ship_transform) in (&ships, &transforms).join()  {
+                let ship_translation = ship_transform.translation();
+
+                let mut transform = Transform::default();
+                let mut create_point: Vector3<f32> = zero();
+                // generate creation point
+                loop {
+                    create_point.x = rand.next_f32() * ARENA_WIDTH;
+                    create_point.y = rand.next_f32() * ARENA_HEIGHT;
+                    if (ship_translation-create_point).norm() > self.distance_to_ship {
+                        break;
+                    }
+                }
+                transform.set_translation_x(create_point.x);
+                transform.set_translation_y(create_point.y);
+                // scale, velocity, rotation
+                transform.set_scale(Vector3::new(1.0, 1.0, 1.0));
+                let gen = || (rand.next_f32() - 0.5) * 2.0 * self.max_velocity;
+                let velocity = Vector2::new(gen(), gen());
+
+                let physical = Physical {
+                    velocity: velocity,
+                    max_velocity: 100f32,
+                    rotation: self.max_rotation * 2.0 * (rand.next_f32() - 0.5),
+                };
+
+                let e = entities.create();
+
+                lazy.insert(e, Asteroid {} );
+                lazy.insert(e, transform);
+                lazy.insert(e, physical);
+                lazy.insert(e, asteroidres.sprite_render());
+
+                self.time_to_spawn = self.average_spawn_time + rand.next_f32();
             }
         }
     }

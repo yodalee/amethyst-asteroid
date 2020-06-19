@@ -44,3 +44,9 @@ pub struct Bullet;
 impl Component for Bullet {
     type Storage = DenseVecStorage<Self>;
 }
+
+pub struct Asteroid;
+
+impl Component for Asteroid {
+    type Storage = DenseVecStorage<Self>;
+}
