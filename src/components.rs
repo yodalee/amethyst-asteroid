@@ -50,3 +50,17 @@ pub struct Asteroid;
 impl Component for Asteroid {
     type Storage = DenseVecStorage<Self>;
 }
+
+pub struct Collider {
+    pub typ: ColliderType
+}
+
+pub enum ColliderType {
+    Ship,
+    Bullet,
+    Asteroid,
+}
+
+impl Component for Collider {
+    type Storage = DenseVecStorage<Self>;
+}
