@@ -1,6 +1,6 @@
 use amethyst::{
     core::{
-        math::{Vector3, Vector2, zero, Isometry2},
+        math::{Vector3, Vector2, zero},
         transform::components::Transform,
         timing::Time,
     },
@@ -16,8 +16,8 @@ use ncollide2d::{
     broad_phase::{DBVTBroadPhase, BroadPhase, BroadPhaseInterferenceHandler}};
 use std::collections::HashMap;
 
-use crate::components::{Physical, Ship, Bullet, Asteroid, Collider, ColliderType};
-use crate::resources::{BulletRes, AsteroidRes, RandomGen};
+use crate::components::{Physical, Ship, Bullet, Asteroid, Explosion, Collider, ColliderType};
+use crate::resources::{BulletRes, AsteroidRes, RandomGen, ExplosionRes};
 use crate::states::{ARENA_WIDTH, ARENA_HEIGHT};
 
 #[derive(SystemDesc)]
@@ -252,43 +252,69 @@ impl<'s> System<'s> for SpawnAsteroidSystem {
 #[derive(SystemDesc)]
 pub struct CollisionSystem;
 
+impl CollisionSystem {
+    fn collide(&mut self, pos1: &Vector3<f32>, pos2: &Vector3<f32>) -> bool {
+        (pos1 - pos2).norm() < 5.0
+    }
+}
+
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Collider>,
         ReadStorage<'s, Transform>,
+        ReadExpect<'s, ExplosionRes>,
+        Read<'s, LazyUpdate>,
     );
 
     fn run(&mut self,
            (entities,
             colliders,
-            transform): Self::SystemData) {
-
+            transforms,
+            explosionres,
+            lazy): Self::SystemData) {
 
         // collect collider
-        let mut broad_phase = DBVTBroadPhase::new(0f32);
-        let mut handler = TestHandler {};
-        let mut vec = vec![];
-        for (e, collider, transform) in (&entities, &colliders, &transform).join()  {
-            let pos = transform.translation();
-            let pos = Isometry2::new(Vector2::new(pos.x, pos.y), zero());
-            let vol = bounding_volume::bounding_sphere( &Ball::new(10.0), &pos );
-            broad_phase.create_proxy(vol, vec.len());
-            vec.push((collider, e));
+        let mut bullets = vec![];
+        let mut asteroids = vec![];
+
+        for (e, collider, transform) in (&entities, &colliders, &transforms).join() {
+            match collider.typ {
+                ColliderType::Bullet => bullets.push((e, transform)),
+                ColliderType::Asteroid => asteroids.push((e, transform)),
+                _ => {},
+            }
         }
 
-        broad_phase.update(&mut handler);
-    }
-}
+        let mut delete_entities = vec![];
+        let mut explosion_pos = vec![];
+        // handmade collision detection
+        for bullet in bullets {
+            for asteroid in &asteroids {
+                let bullet_position = bullet.1.translation();
+                let asteroid_position = asteroid.1.translation();
+                if self.collide(&bullet_position, &asteroid_position) {
+                    delete_entities.push(bullet.0);
+                    delete_entities.push(asteroid.0);
+                    explosion_pos.push(asteroid.1);
+                    break;
+                }
+            }
+        }
 
-struct TestHandler;
+        delete_entities
+            .iter_mut()
+            .map(|e| entities.delete(*e))
+            .for_each(drop);
+        explosion_pos
+            .iter()
+            .map(|&trans| {
+                let e = entities.create();
+                lazy.insert(e, Explosion::new() );
+                lazy.insert(e, trans.clone());
+                lazy.insert(e, explosionres.sprite_render());
 
-impl BroadPhaseInterferenceHandler<usize> for TestHandler {
-    fn is_interference_allowed(&mut self, a: &usize, b: &usize) -> bool {
-        a != b
-    }
-    fn interference_started(&mut self, data1: &usize, data2: &usize) {
-    }
-    fn interference_stopped(&mut self, _data1: &usize, _data2: &usize) {
+            })
+            .for_each(drop);
     }
 }
