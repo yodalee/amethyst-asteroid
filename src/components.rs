@@ -51,6 +51,22 @@ impl Component for Asteroid {
     type Storage = DenseVecStorage<Self>;
 }
 
+pub struct Explosion {
+    pub time_to_update: f32,
+}
+
+impl Explosion {
+    pub fn new() -> Self {
+        Self {
+            time_to_update: 0.2f32,
+        }
+    }
+}
+
+impl Component for Explosion {
+    type Storage = DenseVecStorage<Self>;
+}
+
 pub struct Collider {
     pub typ: ColliderType
 }

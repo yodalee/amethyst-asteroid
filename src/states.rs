@@ -5,8 +5,8 @@ use amethyst::{
     renderer::{Camera},
 };
 
-use crate::components::{Ship, Physical, Asteroid, Collider, ColliderType};
-use crate::resources::{ShipRes, BulletRes, AsteroidRes, RandomGen};
+use crate::components::{Ship, Physical, Asteroid, Collider, ColliderType, Explosion};
+use crate::resources::{ShipRes, BulletRes, AsteroidRes, RandomGen, ExplosionRes};
 
 pub const ARENA_HEIGHT: f32 = 300.0;
 pub const ARENA_WIDTH: f32 = 300.0;
@@ -54,10 +54,12 @@ impl SimpleState for AsteroidGame {
         ShipRes::initialize(world);
         BulletRes::initialize(world);
         AsteroidRes::initialize(world);
+        ExplosionRes::initialize(world);
         world.insert(RandomGen);
 
         world.register::<Collider>();
         world.register::<Asteroid>();
+        world.register::<Explosion>();
 
         initialize_camera(world);
         initialize_ship(world);

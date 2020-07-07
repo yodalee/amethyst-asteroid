@@ -65,3 +65,20 @@ impl RandomGen {
         rand::thread_rng().gen::<f32>()
     }
 }
+
+pub struct ExplosionRes {
+    pub sprite_store: SpriteStore,
+}
+
+impl ExplosionRes {
+    pub fn initialize(world: &mut World) {
+        let sprite_store = SpriteStore::from_path(world, "explosion");
+        world.insert(
+            ExplosionRes { sprite_store: sprite_store }
+        );
+    }
+
+    pub fn sprite_render(&self) -> SpriteRender {
+        self.sprite_store.sprite_renderer(0)
+    }
+}
