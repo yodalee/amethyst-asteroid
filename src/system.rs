@@ -5,7 +5,8 @@ use amethyst::{
         timing::Time,
     },
     derive::{SystemDesc},
-    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, Entities, LazyUpdate},
+    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, WriteExpect, Entities, LazyUpdate},
+    renderer::{SpriteRender},
     input::{InputHandler, StringBindings},
 };
 
@@ -325,21 +326,26 @@ pub struct ExplosionSystem;
 impl<'s> System<'s> for ExplosionSystem {
     type SystemData = (
         WriteStorage<'s, Explosion>,
+        WriteStorage<'s, SpriteRender>,
         Entities<'s>,
-        ReadExpect<'s, ExplosionRes>,
         Read<'s, Time>,
     );
 
     fn run(&mut self,
            (mut explosions,
+            mut spriterenders,
             entities,
-            explosionres,
             time): Self::SystemData) {
         let delta = time.delta_seconds();
 
-        for (e, explosion) in (&*entities, &mut explosions).join() {
+        for (e, explosion, spriterender) in (&*entities, &mut explosions, &mut spriterenders).join() {
             if explosion.time_to_update <= 0.0 {
-                entities.delete(e);
+                if explosion.frame_count == Explosion::FRAME_LIMIT {
+                    entities.delete(e);
+                } else {
+                    spriterender.sprite_number += 1;
+                    explosion.frame_count += 1;
+                }
             } else {
                 explosion.time_to_update -= delta;
             }

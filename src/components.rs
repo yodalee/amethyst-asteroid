@@ -53,12 +53,15 @@ impl Component for Asteroid {
 
 pub struct Explosion {
     pub time_to_update: f32,
+    pub frame_count: i32,
 }
 
 impl Explosion {
+    pub const FRAME_LIMIT: i32 = 4;
     pub fn new() -> Self {
         Self {
-            time_to_update: 0.2f32,
+            time_to_update: 0.1f32,
+            frame_count: 0,
         }
     }
 }
