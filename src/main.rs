@@ -23,6 +23,7 @@ use crate::system::{
     BoundarySystem,
     SpawnAsteroidSystem,
     CollisionSystem,
+    ExplosionSystem,
 };
 
 fn main() -> amethyst::Result<()> {
@@ -53,7 +54,8 @@ fn main() -> amethyst::Result<()> {
         .with(PhysicalSystem, "physical_system", &["ship_control_system"])
         .with(BoundarySystem, "boundary_system", &["physical_system"])
         .with(SpawnAsteroidSystem::new(), "spawn_system", &[])
-        .with(CollisionSystem, "collision_system", &[]);
+        .with(CollisionSystem, "collision_system", &[])
+        .with(ExplosionSystem, "explosion_system", &[]);
 
     let mut game = Application::new(assets_dir, AsteroidGame, game_data)?;
     game.run();

@@ -318,3 +318,31 @@ impl<'s> System<'s> for CollisionSystem {
             .for_each(drop);
     }
 }
+
+#[derive(SystemDesc)]
+pub struct ExplosionSystem;
+
+impl<'s> System<'s> for ExplosionSystem {
+    type SystemData = (
+        WriteStorage<'s, Explosion>,
+        Entities<'s>,
+        ReadExpect<'s, ExplosionRes>,
+        Read<'s, Time>,
+    );
+
+    fn run(&mut self,
+           (mut explosions,
+            entities,
+            explosionres,
+            time): Self::SystemData) {
+        let delta = time.delta_seconds();
+
+        for (e, explosion) in (&*entities, &mut explosions).join() {
+            if explosion.time_to_update <= 0.0 {
+                entities.delete(e);
+            } else {
+                explosion.time_to_update -= delta;
+            }
+        }
+    }
+}
