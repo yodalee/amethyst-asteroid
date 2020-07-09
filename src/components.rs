@@ -70,10 +70,12 @@ impl Component for Explosion {
     type Storage = DenseVecStorage<Self>;
 }
 
+#[derive(Clone)]
 pub struct Collider {
     pub typ: ColliderType
 }
 
+#[derive(PartialEq,Clone,Copy)]
 pub enum ColliderType {
     Ship,
     Bullet,

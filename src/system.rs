@@ -1,21 +1,21 @@
 use amethyst::{
     core::{
-        math::{Vector3, Vector2, zero},
+        math::{Vector3, Vector2, zero, Isometry2},
         transform::components::Transform,
         timing::Time,
     },
     derive::{SystemDesc},
-    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, WriteExpect, Entities, LazyUpdate},
+    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, Entities, LazyUpdate},
+    ecs::prelude::{Entity},
     renderer::{SpriteRender},
     input::{InputHandler, StringBindings},
 };
 
 use log::{error};
 use ncollide2d::{
-    bounding_volume::{self, AABB},
+    bounding_volume,
     shape::Ball,
     broad_phase::{DBVTBroadPhase, BroadPhase, BroadPhaseInterferenceHandler}};
-use std::collections::HashMap;
 
 use crate::components::{Physical, Ship, Bullet, Asteroid, Explosion, Collider, ColliderType};
 use crate::resources::{BulletRes, AsteroidRes, RandomGen, ExplosionRes};
@@ -253,9 +253,29 @@ impl<'s> System<'s> for SpawnAsteroidSystem {
 #[derive(SystemDesc)]
 pub struct CollisionSystem;
 
-impl CollisionSystem {
-    fn collide(&mut self, pos1: &Vector3<f32>, pos2: &Vector3<f32>) -> bool {
-        (pos1 - pos2).norm() < 5.0
+struct BulletAsteroidHandler {
+    collide_entity: Vec<Entity>,
+}
+
+impl BulletAsteroidHandler {
+    pub fn new() -> Self {
+        Self {
+            collide_entity: vec![],
+        }
+    }
+}
+
+type ColliderEntity = (ColliderType, Entity);
+
+impl BroadPhaseInterferenceHandler<ColliderEntity> for BulletAsteroidHandler {
+    fn is_interference_allowed(&mut self, a: &ColliderEntity, b: &ColliderEntity) -> bool {
+        a.0 != b.0
+    }
+    fn interference_started(&mut self, a: &ColliderEntity, b: &ColliderEntity) {
+        self.collide_entity.push(a.1);
+        self.collide_entity.push(b.1);
+    }
+    fn interference_stopped(&mut self, _a: &ColliderEntity, _b: &ColliderEntity) {
     }
 }
 
@@ -263,6 +283,7 @@ impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Collider>,
+        ReadStorage<'s, Ship>,
         ReadStorage<'s, Transform>,
         ReadExpect<'s, ExplosionRes>,
         Read<'s, LazyUpdate>,
@@ -271,52 +292,39 @@ impl<'s> System<'s> for CollisionSystem {
     fn run(&mut self,
            (entities,
             colliders,
+            ships,
             transforms,
             explosionres,
             lazy): Self::SystemData) {
 
         // collect collider
-        let mut bullets = vec![];
-        let mut asteroids = vec![];
-
-        for (e, collider, transform) in (&entities, &colliders, &transforms).join() {
-            match collider.typ {
-                ColliderType::Bullet => bullets.push((e, transform)),
-                ColliderType::Asteroid => asteroids.push((e, transform)),
-                _ => {},
-            }
+        let mut broad_phase = DBVTBroadPhase::new(0f32);
+        let mut handler = BulletAsteroidHandler::new();
+        //let mut vec = vec![];
+        for (e, collider, _, transform) in (&entities, &colliders, !&ships, &transforms).join()  {
+            let pos = transform.translation();
+            let pos = Isometry2::new(Vector2::new(pos.x, pos.y), zero());
+            let vol = bounding_volume::bounding_sphere( &Ball::new(5.0), &pos );
+            broad_phase.create_proxy(vol, (collider.typ, e));
         }
 
-        let mut delete_entities = vec![];
-        let mut explosion_pos = vec![];
-        // handmade collision detection
-        for bullet in bullets {
-            for asteroid in &asteroids {
-                let bullet_position = bullet.1.translation();
-                let asteroid_position = asteroid.1.translation();
-                if self.collide(&bullet_position, &asteroid_position) {
-                    delete_entities.push(bullet.0);
-                    delete_entities.push(asteroid.0);
-                    explosion_pos.push(asteroid.1);
-                    break;
+        broad_phase.update(&mut handler);
+        for e in handler.collide_entity {
+            if let Some(c) = colliders.get(e) {
+                if c.typ == ColliderType::Bullet {
+                    if let Some(trans) = transforms.get(e) {
+                        let e = entities.create();
+                        lazy.insert(e, Explosion::new() );
+                        lazy.insert(e, trans.clone());
+                        lazy.insert(e, explosionres.sprite_render());
+                    }
                 }
             }
+
+            if let Err(e) = entities.delete(e) {
+                error!("Failed to destroy collide entity: {}", e)
+            }
         }
-
-        delete_entities
-            .iter_mut()
-            .map(|e| entities.delete(*e))
-            .for_each(drop);
-        explosion_pos
-            .iter()
-            .map(|&trans| {
-                let e = entities.create();
-                lazy.insert(e, Explosion::new() );
-                lazy.insert(e, trans.clone());
-                lazy.insert(e, explosionres.sprite_render());
-
-            })
-            .for_each(drop);
     }
 }
 
@@ -341,7 +349,9 @@ impl<'s> System<'s> for ExplosionSystem {
         for (e, explosion, spriterender) in (&*entities, &mut explosions, &mut spriterenders).join() {
             if explosion.time_to_update <= 0.0 {
                 if explosion.frame_count == Explosion::FRAME_LIMIT {
-                    entities.delete(e);
+                    if let Err(e) = entities.delete(e) {
+                        error!("Failed to destroy explosion: {}", e)
+                    }
                 } else {
                     spriterender.sprite_number += 1;
                     explosion.frame_count += 1;
