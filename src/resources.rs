@@ -1,5 +1,6 @@
 use amethyst::{
     ecs::{World},
+    ecs::prelude::{Entity},
     renderer::{SpriteRender},
 };
 
@@ -81,4 +82,8 @@ impl ExplosionRes {
     pub fn sprite_render(&self) -> SpriteRender {
         self.sprite_store.sprite_renderer(0)
     }
+}
+
+pub struct ScoreTextRes {
+    pub score: Entity,
 }
