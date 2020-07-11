@@ -5,10 +5,11 @@ use amethyst::{
         timing::Time,
     },
     derive::{SystemDesc},
-    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, Entities, LazyUpdate},
+    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, Entities, LazyUpdate, WriteExpect},
     ecs::prelude::{Entity},
     renderer::{SpriteRender},
     input::{InputHandler, StringBindings},
+    ui::{UiText},
 };
 
 use log::{error};
@@ -18,7 +19,7 @@ use ncollide2d::{
     broad_phase::{DBVTBroadPhase, BroadPhase, BroadPhaseInterferenceHandler}};
 
 use crate::components::{Physical, Ship, Bullet, Asteroid, Explosion, Collider, ColliderType};
-use crate::resources::{BulletRes, AsteroidRes, RandomGen, ExplosionRes};
+use crate::resources::{BulletRes, AsteroidRes, RandomGen, ExplosionRes, ScoreRes};
 use crate::states::{ARENA_WIDTH, ARENA_HEIGHT};
 
 #[derive(SystemDesc)]
@@ -253,27 +254,40 @@ impl<'s> System<'s> for SpawnAsteroidSystem {
 #[derive(SystemDesc)]
 pub struct CollisionSystem;
 
-struct BulletAsteroidHandler {
+struct CollisionHandler {
     collide_entity: Vec<Entity>,
+    ship_hit: bool,
 }
 
-impl BulletAsteroidHandler {
+impl CollisionHandler {
     pub fn new() -> Self {
         Self {
             collide_entity: vec![],
+            ship_hit: false,
         }
     }
 }
 
 type ColliderEntity = (ColliderType, Entity);
 
-impl BroadPhaseInterferenceHandler<ColliderEntity> for BulletAsteroidHandler {
+impl BroadPhaseInterferenceHandler<ColliderEntity> for CollisionHandler {
     fn is_interference_allowed(&mut self, a: &ColliderEntity, b: &ColliderEntity) -> bool {
+
         a.0 != b.0
     }
     fn interference_started(&mut self, a: &ColliderEntity, b: &ColliderEntity) {
-        self.collide_entity.push(a.1);
-        self.collide_entity.push(b.1);
+        match (a.0, b.0) {
+            (ColliderType::Asteroid, ColliderType::Bullet) |
+            (ColliderType::Bullet, ColliderType::Asteroid) => {
+                self.collide_entity.push(a.1);
+                self.collide_entity.push(b.1);
+            },
+            (ColliderType::Asteroid, ColliderType::Ship) |
+            (ColliderType::Ship, ColliderType::Asteroid) => {
+            },
+            (_, _) => {
+            }
+        }
     }
     fn interference_stopped(&mut self, _a: &ColliderEntity, _b: &ColliderEntity) {
     }
@@ -285,6 +299,8 @@ impl<'s> System<'s> for CollisionSystem {
         ReadStorage<'s, Collider>,
         ReadStorage<'s, Ship>,
         ReadStorage<'s, Transform>,
+        WriteExpect<'s, ScoreRes>,
+        WriteStorage<'s, UiText>,
         ReadExpect<'s, ExplosionRes>,
         Read<'s, LazyUpdate>,
     );
@@ -294,12 +310,14 @@ impl<'s> System<'s> for CollisionSystem {
             colliders,
             ships,
             transforms,
+            mut scoretexts,
+            mut uitext,
             explosionres,
             lazy): Self::SystemData) {
 
         // collect collider
         let mut broad_phase = DBVTBroadPhase::new(0f32);
-        let mut handler = BulletAsteroidHandler::new();
+        let mut handler = CollisionHandler::new();
         //let mut vec = vec![];
         for (e, collider, _, transform) in (&entities, &colliders, !&ships, &transforms).join()  {
             let pos = transform.translation();
@@ -312,15 +330,24 @@ impl<'s> System<'s> for CollisionSystem {
         for e in handler.collide_entity {
             if let Some(c) = colliders.get(e) {
                 if c.typ == ColliderType::Bullet {
+                    // create explosion
                     if let Some(trans) = transforms.get(e) {
                         let e = entities.create();
                         lazy.insert(e, Explosion::new() );
                         lazy.insert(e, trans.clone());
                         lazy.insert(e, explosionres.sprite_render());
                     }
+
+                    // change score
+                    scoretexts.score = scoretexts.score + 1;
+                    if let Some(text) = uitext.get_mut(scoretexts.text) {
+                        text.text = scoretexts.score.to_string()
+                    }
                 }
+
             }
 
+            // delete the bullet and asteroid
             if let Err(e) = entities.delete(e) {
                 error!("Failed to destroy collide entity: {}", e)
             }
