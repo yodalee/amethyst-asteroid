@@ -1,6 +1,7 @@
 use amethyst::{
     core::transform::{Transform},
     core::math::{zero},
+    input::{VirtualKeyCode, is_key_down},
     prelude::*,
     renderer::{Camera},
 };
@@ -17,8 +18,6 @@ use crate::resources::{
 
 pub const ARENA_HEIGHT: f32 = 300.0;
 pub const ARENA_WIDTH: f32 = 300.0;
-
-pub struct AsteroidGame;
 
 fn initialize_camera(world: &mut World) {
     let mut transform = Transform::default();
@@ -54,6 +53,9 @@ fn initialize_ship(world: &mut World) {
         .build();
 }
 
+pub struct AsteroidGame;
+pub struct AsteroidGamePause;
+
 impl SimpleState for AsteroidGame {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
@@ -70,5 +72,31 @@ impl SimpleState for AsteroidGame {
         initialize_camera(world);
         initialize_ship(world);
     }
+
+    fn handle_event(&mut self,
+                    _data: StateData<'_, GameData<'_, '_>>,
+                    event: StateEvent) -> SimpleTrans {
+        if let StateEvent::Window(event) = event {
+            if is_key_down(&event, VirtualKeyCode::Escape) {
+                println!("Escape pressed");
+                return Trans::Push(Box::new(AsteroidGamePause));
+            }
+        }
+
+        Trans::None
+    }
 }
 
+impl SimpleState for AsteroidGamePause {
+    fn handle_event(&mut self,
+                    _data: StateData<'_, GameData<'_, '_>>,
+                    event: StateEvent) -> SimpleTrans {
+        if let StateEvent::Window(event) = event {
+            if is_key_down(&event, VirtualKeyCode::Escape) {
+                return Trans::Pop;
+            }
+        }
+
+        Trans::None
+    }
+}
