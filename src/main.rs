@@ -18,14 +18,6 @@ mod textures;
 mod resources;
 
 use crate::states::AsteroidGame;
-use crate::system::{
-    ShipControlSystem,
-    PhysicalSystem,
-    BoundarySystem,
-    SpawnAsteroidSystem,
-    CollisionSystem,
-    ExplosionSystem,
-};
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -52,15 +44,12 @@ fn main() -> amethyst::Result<()> {
         )?
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
-        .with_bundle(UiBundle::<StringBindings>::new())?
-        .with(ShipControlSystem, "ship_control_system", &["input_system"])
-        .with(PhysicalSystem, "physical_system", &["ship_control_system"])
-        .with(BoundarySystem, "boundary_system", &["physical_system"])
-        .with(SpawnAsteroidSystem::new(), "spawn_system", &[])
-        .with(CollisionSystem, "collision_system", &[])
-        .with(ExplosionSystem, "explosion_system", &[]);
+        .with_bundle(UiBundle::<StringBindings>::new())?;
 
-    let mut game = Application::new(assets_dir, AsteroidGame, game_data)?;
+    let mut game = Application::new(
+        assets_dir,
+        AsteroidGame::default(),
+        game_data)?;
     game.run();
 
     Ok(())
