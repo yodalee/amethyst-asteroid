@@ -5,9 +5,16 @@ use amethyst::{
         timing::Time,
     },
     derive::{SystemDesc},
-    ecs::{Join, ReadStorage, WriteStorage, System, SystemData, Read, ReadExpect, Entities, LazyUpdate, WriteExpect},
+    ecs::{Join,
+          ReadStorage, WriteStorage,
+          System, SystemData,
+          Read, ReadExpect,
+          Entities, LazyUpdate,
+          Write, WriteExpect},
     ecs::prelude::{Entity},
+    prelude::{Trans, TransEvent, GameData, StateEvent},
     renderer::{SpriteRender},
+    shrev::{EventChannel},
     input::{InputHandler, StringBindings},
     ui::{UiText},
 };
@@ -20,7 +27,7 @@ use ncollide2d::{
 
 use crate::components::{Physical, Ship, Bullet, Asteroid, Explosion, Collider, ColliderType};
 use crate::resources::{BulletRes, AsteroidRes, RandomGen, ExplosionRes, ScoreRes};
-use crate::states::{ARENA_WIDTH, ARENA_HEIGHT};
+use crate::states::{ARENA_WIDTH, ARENA_HEIGHT, AsteroidGamePause};
 
 #[derive(SystemDesc)]
 pub struct ShipControlSystem;
@@ -251,9 +258,6 @@ impl<'s> System<'s> for SpawnAsteroidSystem {
     }
 }
 
-#[derive(SystemDesc)]
-pub struct CollisionSystem;
-
 struct CollisionHandler {
     collide_entity: Vec<Entity>,
     ship_hit: bool,
@@ -284,6 +288,7 @@ impl BroadPhaseInterferenceHandler<ColliderEntity> for CollisionHandler {
             },
             (ColliderType::Asteroid, ColliderType::Ship) |
             (ColliderType::Ship, ColliderType::Asteroid) => {
+                self.ship_hit = true;
             },
             (_, _) => {
             }
@@ -293,14 +298,17 @@ impl BroadPhaseInterferenceHandler<ColliderEntity> for CollisionHandler {
     }
 }
 
+#[derive(SystemDesc)]
+pub struct CollisionSystem;
+
 impl<'s> System<'s> for CollisionSystem {
     type SystemData = (
         Entities<'s>,
         ReadStorage<'s, Collider>,
-        ReadStorage<'s, Ship>,
         ReadStorage<'s, Transform>,
         WriteExpect<'s, ScoreRes>,
         WriteStorage<'s, UiText>,
+        Write<'s, EventChannel<TransEvent<GameData<'static, 'static>, StateEvent>>>,
         ReadExpect<'s, ExplosionRes>,
         Read<'s, LazyUpdate>,
     );
@@ -308,10 +316,10 @@ impl<'s> System<'s> for CollisionSystem {
     fn run(&mut self,
            (entities,
             colliders,
-            ships,
             transforms,
             mut scoretexts,
             mut uitext,
+            mut trans_events,
             explosionres,
             lazy): Self::SystemData) {
 
@@ -319,7 +327,7 @@ impl<'s> System<'s> for CollisionSystem {
         let mut broad_phase = DBVTBroadPhase::new(0f32);
         let mut handler = CollisionHandler::new();
         //let mut vec = vec![];
-        for (e, collider, _, transform) in (&entities, &colliders, !&ships, &transforms).join()  {
+        for (e, collider, transform) in (&entities, &colliders, &transforms).join()  {
             let pos = transform.translation();
             let pos = Isometry2::new(Vector2::new(pos.x, pos.y), zero());
             let vol = bounding_volume::bounding_sphere( &Ball::new(5.0), &pos );
@@ -327,6 +335,12 @@ impl<'s> System<'s> for CollisionSystem {
         }
 
         broad_phase.update(&mut handler);
+
+        if handler.ship_hit {
+            let trans = Box::new(move || Trans::Switch(Box::new(AsteroidGamePause)));
+            trans_events.single_write(trans);
+        }
+
         for e in handler.collide_entity {
             if let Some(c) = colliders.get(e) {
                 if c.typ == ColliderType::Bullet {
