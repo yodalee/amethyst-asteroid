@@ -4,25 +4,17 @@ use amethyst::{
     core::ArcThreadPool,
     input::{VirtualKeyCode, is_key_down},
     prelude::*,
-    renderer::{Camera},
     shred::{Dispatcher, DispatcherBuilder},
 };
 
 use crate::components::{
     Ship,
     Physical,
-    Asteroid,
-    Bullet,
     Collider,
     ColliderType
 };
 use crate::resources::{
     ShipRes,
-    BulletRes,
-    AsteroidRes,
-    RandomGen,
-    ExplosionRes,
-    ScoreRes
 };
 use crate::system::{
     ShipControlSystem,
@@ -36,17 +28,6 @@ use crate::states::{
     ARENA_WIDTH, ARENA_HEIGHT,
     StatePause
 };
-
-fn initialize_camera(world: &mut World) {
-    let mut transform = Transform::default();
-    transform.set_translation_xyz(ARENA_WIDTH * 0.5, ARENA_HEIGHT * 0.5, 1.0);
-
-    world
-        .create_entity()
-        .with(transform)
-        .with(Camera::standard_2d(ARENA_WIDTH, ARENA_HEIGHT))
-        .build();
-}
 
 fn initialize_ship(world: &mut World) {
     let mut transform = Transform::default();
@@ -80,20 +61,6 @@ impl<'a, 'b> SimpleState for StatePlay<'a, 'b> {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
 
-        ShipRes::initialize(world);
-        BulletRes::initialize(world);
-        AsteroidRes::initialize(world);
-        ExplosionRes::initialize(world);
-        ScoreRes::initialize(world);
-        world.insert(RandomGen);
-
-        world.register::<Physical>();
-        world.register::<Ship>();
-        world.register::<Bullet>();
-        world.register::<Asteroid>();
-        world.register::<Collider>();
-
-        initialize_camera(world);
         initialize_ship(world);
 
         // create dispatcher
