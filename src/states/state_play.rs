@@ -32,9 +32,10 @@ use crate::system::{
     CollisionSystem,
     ExplosionSystem,
 };
-
-pub const ARENA_HEIGHT: f32 = 300.0;
-pub const ARENA_WIDTH: f32 = 300.0;
+use crate::states::{
+    ARENA_WIDTH, ARENA_HEIGHT,
+    StatePause
+};
 
 fn initialize_camera(world: &mut World) {
     let mut transform = Transform::default();
@@ -71,12 +72,11 @@ fn initialize_ship(world: &mut World) {
 }
 
 #[derive(Default)]
-pub struct AsteroidGame<'a, 'b> {
+pub struct StatePlay<'a, 'b> {
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
 }
-pub struct AsteroidGamePause;
 
-impl<'a, 'b> SimpleState for AsteroidGame<'a, 'b> {
+impl<'a, 'b> SimpleState for StatePlay<'a, 'b> {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
 
@@ -117,7 +117,7 @@ impl<'a, 'b> SimpleState for AsteroidGame<'a, 'b> {
         if let StateEvent::Window(event) = event {
             if is_key_down(&event, VirtualKeyCode::Escape) {
                 println!("Escape pressed");
-                return Trans::Push(Box::new(AsteroidGamePause));
+                return Trans::Push(Box::new(StatePause));
             }
         }
 
@@ -127,20 +127,6 @@ impl<'a, 'b> SimpleState for AsteroidGame<'a, 'b> {
     fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             dispatcher.dispatch(&data.world);
-        }
-
-        Trans::None
-    }
-}
-
-impl SimpleState for AsteroidGamePause {
-    fn handle_event(&mut self,
-                    _data: StateData<'_, GameData<'_, '_>>,
-                    event: StateEvent) -> SimpleTrans {
-        if let StateEvent::Window(event) = event {
-            if is_key_down(&event, VirtualKeyCode::Escape) {
-                return Trans::Pop;
-            }
         }
 
         Trans::None

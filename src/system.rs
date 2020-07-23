@@ -27,7 +27,7 @@ use ncollide2d::{
 
 use crate::components::{Physical, Ship, Bullet, Asteroid, Explosion, Collider, ColliderType};
 use crate::resources::{BulletRes, AsteroidRes, RandomGen, ExplosionRes, ScoreRes};
-use crate::states::{ARENA_WIDTH, ARENA_HEIGHT, AsteroidGamePause};
+use crate::states::{ARENA_WIDTH, ARENA_HEIGHT, StatePause};
 
 #[derive(SystemDesc)]
 pub struct ShipControlSystem;
@@ -337,7 +337,7 @@ impl<'s> System<'s> for CollisionSystem {
         broad_phase.update(&mut handler);
 
         if handler.ship_hit {
-            let trans = Box::new(move || Trans::Switch(Box::new(AsteroidGamePause)));
+            let trans = Box::new(move || Trans::Switch(Box::new(StatePause)));
             trans_events.single_write(trans);
         }
 

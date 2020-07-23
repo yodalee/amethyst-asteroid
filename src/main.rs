@@ -17,8 +17,6 @@ mod system;
 mod textures;
 mod resources;
 
-use crate::states::AsteroidGame;
-
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
 
@@ -48,7 +46,7 @@ fn main() -> amethyst::Result<()> {
 
     let mut game = Application::new(
         assets_dir,
-        AsteroidGame::default(),
+        states::StatePlay::default(),
         game_data)?;
     game.run();
 
