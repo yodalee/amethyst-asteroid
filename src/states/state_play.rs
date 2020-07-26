@@ -15,6 +15,7 @@ use crate::components::{
 };
 use crate::resources::{
     ShipRes,
+    ScoreRes,
 };
 use crate::system::{
     ShipControlSystem,
@@ -62,6 +63,7 @@ impl<'a, 'b> SimpleState for StatePlay<'a, 'b> {
         let world = data.world;
 
         initialize_ship(world);
+        ScoreRes::initialize(world);
 
         // create dispatcher
         let mut dispatcher = DispatcherBuilder::new()

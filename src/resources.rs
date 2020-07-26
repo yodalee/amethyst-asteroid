@@ -106,7 +106,7 @@ impl ScoreRes {
         let text = world
             .create_entity()
             .with(score_transform)
-            .with(UiText::new(font, "0".to_string(), [0.,0.,0.,1.], 50.))
+            .with(UiText::new(font, "".to_string(), [0.,0.,0.,1.], 50.))
             .build();
 
         world.insert(ScoreRes {
