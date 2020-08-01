@@ -1,11 +1,10 @@
 use amethyst::{
-    assets::{Loader},
     core::transform::{Transform},
     ecs::prelude::{Entity},
     input::{VirtualKeyCode, is_key_down},
     prelude::*,
     renderer::{Camera},
-    ui::{Anchor, TtfFormat, UiText, UiTransform},
+    ui::{Anchor, UiText, UiTransform},
 };
 
 use crate::components::{
@@ -21,6 +20,7 @@ use crate::resources::{
     AsteroidRes,
     RandomGen,
     ExplosionRes,
+    FontRes,
 };
 use crate::states::{
     ARENA_WIDTH, ARENA_HEIGHT,
@@ -39,12 +39,7 @@ fn initialize_camera(world: &mut World) {
 }
 
 fn initialize_text(world: &mut World) -> Entity {
-    let font = world.read_resource::<Loader>().load(
-        "font/square.ttf",
-        TtfFormat,
-        (),
-        &world.read_resource(),
-    );
+    let font = world.read_resource::<FontRes>().font();
     let score_transform = UiTransform::new(
         "score".to_string(), Anchor::Middle, Anchor::Middle,
         0., 0., 1., 1000., 50.);
@@ -72,6 +67,7 @@ impl SimpleState for StateMenu {
         AsteroidRes::initialize(world);
         ExplosionRes::initialize(world);
         world.insert(RandomGen);
+        FontRes::initialize(world);
 
         world.register::<Physical>();
         world.register::<Ship>();

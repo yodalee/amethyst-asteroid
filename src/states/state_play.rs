@@ -62,7 +62,7 @@ impl<'a, 'b> SimpleState for StatePlay<'a, 'b> {
     fn on_start(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
 
-        println!("Game Started");
+        log::info!("Game Started");
         initialize_ship(world);
         ScoreRes::initialize(world);
 
