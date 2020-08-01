@@ -165,7 +165,7 @@ impl<'s> System<'s> for BoundarySystem {
             let y = transform.translation().y;
             if x < 0.0 || y < 0.0 || x > ARENA_WIDTH || y > ARENA_HEIGHT {
                 if let Err(e) = entities.delete(e) {
-                    error!("Failed to destroy entity: {}", e)
+                    error!("Failed to destroy entity: {}", e);
                 }
 
                 continue;

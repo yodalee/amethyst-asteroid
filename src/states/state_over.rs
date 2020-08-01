@@ -1,8 +1,9 @@
 use amethyst::{
-    ecs::prelude::{Entity},
+    ecs::prelude::*,
     input::{VirtualKeyCode, is_key_down},
     prelude::*,
     ui::{Anchor, UiText, UiTransform},
+    renderer::{Camera},
 };
 use crate::resources::{FontRes};
 
@@ -42,7 +43,13 @@ impl SimpleState for StateOver {
 
     fn on_stop(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
-        world.delete_all();
+        world.exec(|(entities, cameras) : (Entities, ReadStorage<Camera>)| {
+            for (e,_) in (&entities, !&cameras).join() {
+                if let Err(e) = entities.delete(e) {
+                    log::error!("Failed to destroy entity: {}", e);
+                }
+            }
+        });
     }
 
     fn handle_event(&mut self,

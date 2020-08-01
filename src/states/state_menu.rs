@@ -92,7 +92,6 @@ impl SimpleState for StateMenu {
     fn on_resume(&mut self, data: StateData<'_, GameData<'_, '_>>) {
         let world = data.world;
         let text = initialize_text(world);
-        initialize_camera(world);
         self.text = Some(text);
     }
 
