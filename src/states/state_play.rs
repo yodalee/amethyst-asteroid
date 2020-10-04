@@ -23,6 +23,7 @@ use crate::system::{
     BoundarySystem,
     SpawnAsteroidSystem,
     CollisionSystem,
+    DeletionSystem,
     ExplosionSystem,
 };
 use crate::states::{
@@ -73,6 +74,7 @@ impl<'a, 'b> SimpleState for StatePlay<'a, 'b> {
             .with(BoundarySystem, "boundary_system", &["physical_system"])
             .with(SpawnAsteroidSystem::new(), "spawn_system", &[])
             .with(CollisionSystem, "collision_system", &[])
+            .with(DeletionSystem::default(),  "deletion_system", &["collision_system"])
             .with(ExplosionSystem, "explosion_system", &[])
             .with_pool((*world.read_resource::<ArcThreadPool>()).clone())
             .build();

@@ -10,11 +10,12 @@ use amethyst::{
           System, SystemData,
           Read, ReadExpect,
           Entities, LazyUpdate,
-          Write, WriteExpect},
+          Write, WriteExpect,
+          World},
     ecs::prelude::{Entity},
     prelude::{Trans, TransEvent, GameData, StateEvent},
     renderer::{SpriteRender},
-    shrev::{EventChannel},
+    shrev::{EventChannel, ReaderId},
     input::{InputHandler, StringBindings},
     ui::{UiText},
 };
@@ -298,6 +299,19 @@ impl BroadPhaseInterferenceHandler<ColliderEntity> for CollisionHandler {
     }
 }
 
+#[derive(Debug)]
+pub struct CollisionEvent {
+    pub entity: Entity,
+}
+
+impl CollisionEvent {
+    pub fn new(entity: Entity) -> Self {
+        Self {
+            entity: entity
+        }
+    }
+}
+
 #[derive(SystemDesc)]
 pub struct CollisionSystem;
 
@@ -306,22 +320,15 @@ impl<'s> System<'s> for CollisionSystem {
         Entities<'s>,
         ReadStorage<'s, Collider>,
         ReadStorage<'s, Transform>,
-        WriteExpect<'s, ScoreRes>,
-        WriteStorage<'s, UiText>,
         Write<'s, EventChannel<TransEvent<GameData<'static, 'static>, StateEvent>>>,
-        ReadExpect<'s, ExplosionRes>,
-        Read<'s, LazyUpdate>,
+        Write<'s, EventChannel<CollisionEvent>>,
     );
-
     fn run(&mut self,
            (entities,
             colliders,
             transforms,
-            mut scoretexts,
-            mut uitext,
             mut trans_events,
-            explosionres,
-            lazy): Self::SystemData) {
+            mut collision_channel): Self::SystemData) {
 
         // collect collider
         let mut broad_phase = DBVTBroadPhase::new(0f32);
@@ -343,6 +350,48 @@ impl<'s> System<'s> for CollisionSystem {
         }
 
         for e in handler.collide_entity {
+            collision_channel.single_write(CollisionEvent::new(e));
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct DeletionSystem {
+    event_reader: Option<ReaderId<CollisionEvent>>,
+}
+
+impl<'s> System<'s> for DeletionSystem {
+    type SystemData = (
+        Entities<'s>,
+        ReadStorage<'s, Collider>,
+        ReadStorage<'s, Transform>,
+        Read<'s, EventChannel<CollisionEvent>>,
+        ReadExpect<'s, ExplosionRes>,
+        WriteStorage<'s, UiText>,
+        WriteExpect<'s, ScoreRes>,
+        Read<'s, LazyUpdate>,
+    );
+
+    fn setup(&mut self, world: &mut World) {
+        Self::SystemData::setup(world);
+        self.event_reader = Some(
+            world
+                .fetch_mut::<EventChannel<CollisionEvent>>()
+                .register_reader()
+        )
+    }
+
+    fn run(&mut self,
+           (entities,
+            colliders,
+            transforms,
+            collision_channel,
+            explosionres,
+            mut uitext,
+            mut scoretexts,
+            lazy): Self::SystemData) {
+        for event in collision_channel.read(self.event_reader.as_mut().unwrap()) {
+            let e = event.entity;
             if let Some(c) = colliders.get(e) {
                 if c.typ == ColliderType::Bullet {
                     // create explosion
@@ -359,7 +408,6 @@ impl<'s> System<'s> for CollisionSystem {
                         text.text = scoretexts.score.to_string()
                     }
                 }
-
             }
 
             // delete the bullet and asteroid
