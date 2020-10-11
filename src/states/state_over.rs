@@ -5,7 +5,7 @@ use amethyst::{
     ui::{Anchor, UiText, UiTransform},
     renderer::{Camera},
 };
-use crate::resources::{FontRes};
+use crate::resources::{FontRes, ScoreRes};
 
 #[derive(Default)]
 pub struct StateOver {
@@ -20,6 +20,7 @@ impl StateOver {
 
 fn initialize_text(world: &mut World) -> Entity {
     let font = world.read_resource::<FontRes>().font();
+    let score = world.read_resource::<ScoreRes>().score;
     let score_transform = UiTransform::new(
         "score".to_string(), Anchor::Middle, Anchor::Middle,
         0., 0., 1., 1000., 50.);
@@ -27,7 +28,7 @@ fn initialize_text(world: &mut World) -> Entity {
         .create_entity()
         .with(score_transform)
         .with(UiText::new(font,
-                          "Game Over".to_string(),
+                          format!("Game Over. Your Score {}", score),
                           [0., 0., 0., 1.], 50.))
         .build();
     text

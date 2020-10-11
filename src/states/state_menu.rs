@@ -101,6 +101,8 @@ impl SimpleState for StateMenu {
         if let StateEvent::Window(event) = event {
             if is_key_down(&event, VirtualKeyCode::Space) {
                 return Trans::Push(Box::new(StatePlay::default()));
+            } else if is_key_down(&event, VirtualKeyCode::Escape) {
+                return Trans::Quit;
             }
         }
 
