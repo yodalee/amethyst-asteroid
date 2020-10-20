@@ -188,8 +188,8 @@ impl SpawnAsteroidSystem {
     pub fn new() -> Self {
         Self {
             time_to_spawn: 2f32,
-            max_velocity: 100f32,
-            max_rotation: 15f32,
+            max_velocity: 60f32,
+            max_rotation: 5f32,
             distance_to_ship: 200f32,
             average_spawn_time: 0.5f32,
         }
@@ -251,8 +251,8 @@ impl<'s> System<'s> for SpawnAsteroidSystem {
                 lazy.insert(e, transform);
                 lazy.insert(e, physical);
                 lazy.insert(e, Collider { typ: ColliderType::Asteroid } );
-                lazy.insert(e, asteroidres.sprite_render());
-
+                lazy.insert(e, asteroidres.sprite_render(
+                        (rand.next_u32() % 3) as usize));
                 self.time_to_spawn = self.average_spawn_time + rand.next_f32();
             }
         }

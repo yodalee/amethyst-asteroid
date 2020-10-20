@@ -56,8 +56,8 @@ impl AsteroidRes {
         );
     }
 
-    pub fn sprite_render(&self) -> SpriteRender {
-        self.sprite_store.sprite_renderer(0)
+    pub fn sprite_render(&self, id: usize) -> SpriteRender {
+        self.sprite_store.sprite_renderer(id)
     }
 }
 
@@ -67,6 +67,11 @@ impl RandomGen {
     pub fn next_f32(&self) -> f32 {
         use rand::Rng;
         rand::thread_rng().gen::<f32>()
+    }
+
+    pub fn next_u32(&self) -> u32 {
+        use rand::Rng;
+        rand::thread_rng().gen::<u32>()
     }
 }
 
